@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zber Cien O&Z</title>
+    <!-- Knižnica pre prácu s XLSX / CSV súbormi -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #000000;
+            --text-secondary: #6c757d;
+            --border-color: #e5e5ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background-color: var(--bg-color);
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .week-picker {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 12px 20px;
+            margin: 10px 15px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .week-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0 10px;
+        }
+
+        .week-info {
+            text-align: center;
+        }
+
+        .week-info .label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .week-info .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .main-group-picker {
+            display: flex;
+            background-color: #e3e3e8;
+            padding: 3px;
+            border-radius: 10px;
+            margin: 0 15px 10px 15px;
+        }
+
+        .main-group-btn {
+            flex: 1;
+            border: none;
+            background: none;
+            padding: 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        .main-group-btn.active {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            color: var(--primary-color);
+        }
+
+        .categories-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 0 15px 10px 15px;
+            scrollbar-width: none;
+        }
+
+        .categories-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat-btn {
+            background-color: #e4e4e6;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+
+        .cat-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        .container {
+            padding: 0 15px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .item-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+
+        .item-details {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .item-cat-badge {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary-color);
+            background-color: rgba(0, 122, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .prices-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .price-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .price-col label {
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .price-input {
+            width: 100%;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-color);
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .price-input:focus {
+            border-color: var(--primary-color);
+            background-color: white;
+        }
+
+        .prev-price {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+            text-align: center;
+        }
+
+        .actions-section {
+            margin: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-main {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background-color: #e4e4e6;
+            color: var(--text-main);
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .file-input-wrapper {
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .file-input-wrapper input {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Zber Cien O&Z</h1>
+        <input type="text" id="searchInput" class="search-box" placeholder="Hľadať položku alebo kód..." oninput="renderApp()">
+    </header>
+
+    <div class="week-picker">
+        <button class="week-btn" onclick="changeWeek(-1)">‹</button>
+        <div class="week-info">
+            <div class="label">Kalendárny týždeň</div>
+            <div class="value" id="weekDisplay">Týždeň 42</div>
+        </div>
+        <button class="week-btn" onclick="changeWeek(1)">›</button>
+    </div>
+
+    <!-- Hlavné skupiny: Všetky / Fruits / Vegetables -->
+    <div class="main-group-picker">
+        <button class="main-group-btn active" onclick="setMainGroup('ALL', this)">Všetky</button>
+        <button class="main-group-btn" onclick="setMainGroup('FRUITS', this)">Fruits</button>
+        <button class="main-group-btn" onclick="setMainGroup('VEGETABLES', this)">Vegetables</button>
+    </div>
+
+    <!-- Podkategórie -->
+    <div class="categories-scroll" id="categoriesContainer">
+        <!-- Generované JS -->
+    </div>
+
+    <div class="container" id="itemsContainer">
+        <!-- Generované JS -->
+    </div>
+
+    <div class="actions-section">
+        <button class="btn-main" onclick="exportToXLSX()">Exportovať XLSX Excel (CW <span id="exportBtnWeek">42</span>)</button>
+        <button class="btn-secondary" onclick="openImportModal()">Importovať zoznam z Excelu (.xlsx / .csv)</button>
+        <button class="btn-danger" onclick="clearAllData()">Vymazať všetky uložené položky</button>
+    </div>
+
+    <!-- MODAL PRE IMPORT -->
+    <div class="modal" id="importModal">
+        <div class="modal-content">
+            <h3>Import Položiek</h3>
+            <p style="font-size: 13px; color: #666; margin: 0;">Vyber `.xlsx` alebo `.csv` súbor z telefónu:</p>
+            
+            <div class="file-input-wrapper">
+                <input type="file" id="xlsxFileInput" accept=".xlsx, .xls, .csv, .txt">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-main" onclick="processImportFile()">Nahrať súbor</button>
+                <button class="btn-secondary" onclick="closeImportModal()">Zrušiť</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedWeek = 42;
+        let selectedMainGroup = "ALL";
+        let selectedCategory = "Všetky";
+        
+        let items = JSON.parse(localStorage.getItem('priceItems')) || [];
+
+        function changeWeek(direction) {
+            selectedWeek += direction;
+            if (selectedWeek < 1) selectedWeek = 1;
+            if (selectedWeek > 53) selectedWeek = 53;
+            document.getElementById('weekDisplay').innerText = `Týždeň ${selectedWeek}`;
+            document.getElementById('exportBtnWeek').innerText = selectedWeek;
+            renderApp();
+        }
+
+        function saveData() {
+            localStorage.setItem('priceItems', JSON.stringify(items));
+        }
+
+        function clearAllData() {
+            if (confirm("Naozaj chceš vymazať všetky zoznamy a uložené ceny?")) {
+                items = [];
+                saveData();
+                renderApp();
+            }
+        }
+
+        function updatePrice(index, store, value) {
+            if (!items[index].weeklyPrices) items[index].weeklyPrices = {};
+            if (!items[index].weeklyPrices[selectedWeek]) {
+                items[index].weeklyPrices[selectedWeek] = { lidlReg: "", lidl: "", kaufland: "" };
+            }
+            items[index].weeklyPrices[selectedWeek][store] = value;
+            saveData();
+        }
+
+        function setMainGroup(group, btnElement) {
+            selectedMainGroup = group;
+            selectedCategory = "Všetky";
+            
+            document.querySelectorAll('.main-group-btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            renderCategories();
+            renderApp();
+        }
+
+        function getMainGroupFromBuyer(buyerCode) {
+            const b = (buyerCode || "").toUpperCase().trim();
+            if (b === "AA") return "FRUITS";
+            if (b === "VJ") return "VEGETABLES";
+            return "OTHER";
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            
+            let availableItems = items;
+            if (selectedMainGroup !== "ALL") {
+                availableItems = items.filter(i => getMainGroupFromBuyer(i.buyerCode) === selectedMainGroup);
+            }
+
+            const cats = ["Všetky", ...new Set(availableItems.map(i => i.category).filter(Boolean))];
+            
+            container.innerHTML = cats.map(cat => `
+                <button class="cat-btn ${selectedCategory === cat ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}</button>
+            `).join('');
+        }
+
+        function setCategory(cat) {
+            selectedCategory = cat;
+            renderCategories();
+            renderApp();
+        }
+
+        function renderApp() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('itemsContainer');
+            
+            renderCategories();
+
+            const filtered = items.filter(item => {
+                const itemMainGroup = getMainGroupFromBuyer(item.buyerCode);
+                const matchMainGroup = selectedMainGroup === "ALL" || itemMainGroup === selectedMainGroup;
+                const matchCat = selectedCategory === "Všetky" || item.category === selectedCategory;
+                const matchSearch = (item.name && item.name.toLowerCase().includes(search)) || 
+                                    (item.articleNumber && item.articleNumber.toString().includes(search));
+
+                return matchMainGroup && matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#888; padding: 30px;">Žiadne položky na zobrazenie.<br><small>Nahraj Excel zoznam cez tlačidlo nižšie.</small></p>';
+                return;
+            }
+
+            container.innerHTML = filtered.map((item) => {
+                const realIndex = items.findIndex(i => i.articleNumber === item.articleNumber && i.name === item.name);
+                const curPrices = (item.weeklyPrices && item.weeklyPrices[selectedWeek]) || { lidlReg: "", lidl: "", kaufland: "" };
+                const prevPrices = (item.weeklyPrices && item.weeklyPrices[selectedWeek - 1]) || {};
+
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h2 class="item-name">${item.name}</h2>
+                                <div class="item-details">Kód: ${item.articleNumber} &bull; Nákupca: ${item.buyerCode}</div>
+                            </div>
+                            <span class="item-cat-badge">${item.category}</span>
+                        </div>
+                        <div class="prices-grid">
+                            <div class="price-col">
+                                <label>Lidl Reg.</label>
+                                <input type="number" step="0.01" class="price-input" value="${curPrices.lidlReg || ''}" oninput="updatePrice(${realIndex}, 'lidlReg', this.value)" placeholder="0.00">
+                                <div class="prev-price">${prevPrices.lidlReg ? 'CW-1: ' + prevPrices.lidlReg + '€' : ''}</div>
+                            </div>
+                            <div class="price-col">
+                                <label>Lidl</label>
+                                <input type="number" step="0.01" class="price-input" value="${curPrices.lidl || ''}" oninput="updatePrice(${realIndex}, 'lidl', this.value)" placeholder="0.00">
+                                <div class="prev-price">${prevPrices.lidl ? 'CW-1: ' + prevPrices.lidl + '€' : ''}</div>
+                            </div>
+                            <div class="price-col">
+                                <label>Kaufland</label>
+                                <input type="number" step="0.01" class="price-input" value="${curPrices.kaufland || ''}" oninput="updatePrice(${realIndex}, 'kaufland', this.value)" placeholder="0.00">
+                                <div class="prev-price">${prevPrices.kaufland ? 'CW-1: ' + prevPrices.kaufland + '€' : ''}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- EXPORT DO .XLSX S DIESEĽNOU DIAKRITIKOU ---
+        function exportToXLSX() {
+            if (items.length === 0) {
+                alert("Nenájdené žiadne položky na export!");
+                return;
+            }
+
+            const dataToExport = items.map(item => {
+                const p = (item.weeklyPrices && item.weeklyPrices[selectedWeek]) || {};
+                return {
+                    "Artiklové číslo": item.articleNumber,
+                    "Kód nákupcu": item.buyerCode,
+                    "Kategória": item.category,
+                    "Položka": item.name,
+                    "Týždeň": `CW${selectedWeek}`,
+                    "Lidl regional (€)": p.lidlReg ? parseFloat(p.lidlReg) : "",
+                    "Lidl (€)": p.lidl ? parseFloat(p.lidl) : "",
+                    "Kaufland (€)": p.kaufland ? parseFloat(p.kaufland) : ""
+                };
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, `Ceny CW${selectedWeek}`);
+
+            XLSX.writeFile(workbook, `Zber_Cien_CW${selectedWeek}.xlsx`);
+        }
+
+        // --- IMPORT S PODPOROU KÓDOVANIA DIAKRITIKY (CP1250 & UTF-8) ---
+        function openImportModal() {
+            document.getElementById('importModal').style.display = 'flex';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+        }
+
+        function processImportFile() {
+            const fileInput = document.getElementById('xlsxFileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Prosím, vyber .xlsx alebo .csv súbor!");
+                return;
+            }
+
+            const isCsv = file.name.endsWith('.csv') || file.name.endsWith('.txt');
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                let workbook;
+                
+                if (isCsv) {
+                    // Pre CSV/TXT načítame text s ošetrením slovenskej diakritiky (CP1250 / UTF-8)
+                    const text = e.target.result;
+                    workbook = XLSX.read(text, { type: 'string', codepage: 1250 });
+                } else {
+                    // Pre .xlsx súbory načítame binárny buffer
+                    const data = new Uint8Array(e.target.result);
+                    workbook = XLSX.read(data, { type: 'array' });
+                }
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let importedCount = 0;
+
+                jsonRows.forEach((row, index) => {
+                    if (index === 0) return; // preskočiť hlavičku
+
+                    const articleNumber = row[0] ? String(row[0]).trim() : "";
+                    const buyerCode = row[1] ? String(row[1]).trim() : "";
+                    const category = row[2] ? String(row[2]).trim() : "";
+                    const name = row[3] ? String(row[3]).trim() : "";
+
+                    if (articleNumber && name) {
+                        const existingIndex = items.findIndex(i => i.articleNumber === articleNumber);
+                        if (existingIndex > -1) {
+                            items[existingIndex].buyerCode = buyerCode;
+                            items[existingIndex].category = category;
+                            items[existingIndex].name = name;
+                        } else {
+                            items.push({
+                                articleNumber: articleNumber,
+                                buyerCode: buyerCode,
+                                category: category,
+                                name: name,
+                                weeklyPrices: {}
+                            });
+                        }
+                        importedCount++;
+                    }
+                });
+
+                saveData();
+                renderApp();
+                closeImportModal();
+                fileInput.value = "";
+                alert(`Úspešne sa spracovalo a nahralo ${importedCount} položiek so správnou diakritikou!`);
+            };
+
+            if (isCsv) {
+                // Načítanie textu pre CSV
+                reader.readAsText(file, 'windows-1250');
+            } else {
+                // Načítanie ArrayBuffer pre .xlsx
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        // Inicializácia
+        renderApp();
+    </script>
+</body>
+</html>
